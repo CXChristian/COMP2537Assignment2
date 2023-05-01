@@ -66,7 +66,7 @@ app.get('/signup', (req,res) => {
     var html = `
     <div>create user</div>
     <form action='/createUser' method='post'>
-    <input name='username' type='text' placeholder='username'>
+    <input name='name' type='text' placeholder='name'>
     <input name='email' type='text' placeholder='email'>
     <input name='password' type='password' placeholder='password'>
     <button>Submit</button>
@@ -77,20 +77,20 @@ app.get('/signup', (req,res) => {
 
 //create user page
 app.post('/createUser', async (req,res) => {
-    var username = req.body.username;
+    var name = req.body.name;
     var email = req.body.email;
     var password = req.body.password;
 
-    console.log(username);
+    console.log(name);
 
     const schema = Joi.object(
     {
-        username: Joi.string().alphanum().max(20).required(),
+        name: Joi.string().alphanum().max(20).required(),
         email: Joi.string(),
         password: Joi.string().max(20).required()
     });
 
-    const validationResult = schema.validate({username, email, password});
+    const validationResult = schema.validate({name, email, password});
 	if (validationResult.error != null) {
 	   console.log(validationResult.error);
 	   res.redirect("/createUserInvalid");
@@ -99,7 +99,7 @@ app.post('/createUser', async (req,res) => {
 
     var hashedPassword = await bcrypt.hash(password, 12);
 	
-	await userCollection.insertOne({username: username, password: hashedPassword, email: email});
+	await userCollection.insertOne({name: name, password: hashedPassword, email: email});
 	console.log("Inserted user into mongodb");
 
     var html = "successfully created user";
@@ -111,7 +111,7 @@ app.get('/login', (req,res) => {
     var html = `
     log in
     <form action='/loggingin' method='post'>
-    <input name='username' type='text' placeholder='username'>
+    <input name='email' type='text' placeholder='email'>
     <input name='password' type='password' placeholder='password'>
     <button>Submit</button>
     </form>
@@ -134,6 +134,12 @@ app.get('/logout', (req,res) => {
     `;
     res.send(html);
 });
+
+//redirects/catches 404 pages
+app.get("*", (req,res) => {
+	res.status(404);
+	res.send("Sorry! We could not find that page. Error 404");
+})
 
 //console log the port being used
 app.listen(port, () => {

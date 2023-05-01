@@ -20,6 +20,9 @@ const Joi = require("joi");
 //the port that is used to run the local host
 const port = process.env.PORT || 3080;
 
+//session ends after one hour (hours * minutes * seconds * millis)
+const expireTime = 1 * 60 * 60 * 1000
+
 //connecting to mongodb, tutorial code from mongodb site
 async function mongodbConnect() {
     const uri = process.env.MONGODB_URI;
@@ -46,7 +49,7 @@ app.use(session({
 
 //main page
 app.get('/', (req, res) => {
-    var html = `Conrad's COMP 2537 Web Dev Assignment 1`;
+    var html = `Conrad's COMP 2537 Web Dev Assignment 1<br>`;
     if (req.session.authenticated) {
         html += `
         Hello, ${req.session.name}
@@ -119,7 +122,15 @@ app.post('/createUser', async (req, res) => {
     await userCollection.insertOne({ name: name, password: hashedPassword, email: email });
     console.log("Inserted user into mongodb");
 
-    var html = "successfully created user";
+    var html = `successfully created user
+    
+    <div><a href ="/">Homepage</a></div>
+    `;
+
+    req.session.authenticated = true;
+    req.session.email = email;
+    req.session.cookie.maxAge = expireTime;
+
     res.send(html);
 });
 
@@ -172,12 +183,54 @@ app.get('/login', (req, res) => {
     res.send(html);
 });
 
+app.post('/loggingin', async (req, res) => {
+    var email = req.body.email;
+    var password = req.body.password;
+
+    const schema = Joi.string().required();
+    const validationResult = schema.validate(email);
+    if (validationResult.error != null) {
+        console.log(validationResult.error);
+        res.redirect("/login");
+        return;
+    }
+
+    const result = await userCollection.find({ email: email }).project({ email: 1, password: 1, _id: 1 }).toArray();
+
+    console.log(result);
+    if (result.length != 1) {
+        console.log("email not found");
+        res.redirect("/login");
+        return;
+    }
+    if (await bcrypt.compare(password, result[0].password)) {
+        console.log("correct password");
+        req.session.authenticated = true;
+        req.session.email = email;
+        req.session.cookie.maxAge = expireTime;
+
+        res.redirect('/members');
+        return;
+    }
+    else {
+        console.log("Invalid email/password combination");
+        res.redirect("/login");
+        return;
+    }
+});
+
 //members page
 app.get('/members', (req, res) => {
-    var html = `
-    <div>Placeholder for members</div>
-    `;
-    res.send(html);
+    var html = `Conrad's COMP 2537 Web Dev Assignment 1<br>`;
+    if (req.session.authenticated) {
+        html += `
+        Hello, ${req.session.name}
+        <div><a href ="/logout">Logout</a></div>
+        `;
+        res.send(html);
+    } else {
+        res.send("/");
+    }
 });
 
 //logout page

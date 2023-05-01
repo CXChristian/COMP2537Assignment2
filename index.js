@@ -8,6 +8,8 @@ const express = require('express');
 const session = require('express-session');
 const app = express();
 
+const MongoStore = require('connect-mongo');
+
 //used to connect to mongodb
 const bcrypt = require('bcrypt');
 const { MongoClient } = require('mongodb');
@@ -40,9 +42,18 @@ async function mongodbConnect() {
 
 mongodbConnect().catch(console.error);
 
+//encrypts and stores session in mongodb
+var mongoStore = MongoStore.create({
+    mongoUrl: process.env.MONGODB_URI,
+    crypto: {
+        secret: process.env.MONGODB_SESSION_SECRET
+    }
+})
+
 //creates a session based
 app.use(session({
     secret: process.env.NODE_SESSION_SECRET,
+    store: mongoStore,
     saveUninitialized: false,
     resave: true
 }))

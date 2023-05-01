@@ -93,6 +93,7 @@ app.get('/', async (req, res) => {
     }
 });
 
+//prevents code injection 
 app.get('/nosql-injection', async (req,res) => {
 	var name = req.query.user;
 
@@ -107,7 +108,8 @@ app.get('/nosql-injection', async (req,res) => {
 
 	if (validationResult.error != null) {  
 	   console.log(validationResult.error);
-	   res.send("<h1 style='color:darkred;'>A NoSQL injection attack was detected!!</h1>");
+       //redirects back to mainpage if validation finds something fishy
+	   res.redirect("/");
 	   return;
 	}	
 
@@ -294,7 +296,8 @@ app.get('/members', async (req, res) => {
         console.log("test " + username);
         html += `
         Hello, ${username}
-        <img src= "/gif/2"/>
+        <br>
+        <img src='${gifUpload(gif)}' alt="Sorry, An image couldn't be loaded!" style='width:250px';>
         <div><a href ="/logout">Logout</a></div>
         `;
         res.send(html);
@@ -303,12 +306,14 @@ app.get('/members', async (req, res) => {
     }
 });
 
-app.get('/gif/:id', (req,res) => {
-
+//Tried using this for hours, couldn't figure out how to query into members
+//but direct from localhost[port]/gif/2 worked...
+app.get('/gif/:id', (req, res) => {
     var gif = req.params.id;
 
+
     if (gif == 1) {
-        res.send("<img src='/pika.gif' style='width:250px;'>");
+        res.send("/pika.gif");
     }
     else if (gif == 2) {
         res.send("<img src='/rainbowcat.gif' style='width:250px;'>");
@@ -320,6 +325,19 @@ app.get('/gif/:id', (req,res) => {
         res.send("Invalid gif id: "+gif);
     }
 });
+
+//instead used function to return gif address
+function gifUpload(gif, res) {
+    if (gif == 1) {
+        return "/pika.gif";
+    }
+    else if (gif == 2) {
+        return "/rainbowcat.gif";
+    }
+    else if (gif == 3) {
+        return "/surprise.gif";
+    }
+};
 
 app.use(express.static(__dirname + "/public"));
 

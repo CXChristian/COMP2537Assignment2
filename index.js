@@ -59,11 +59,18 @@ app.use(session({
 }))
 
 //main page
-app.get('/', (req, res) => {
+app.get('/', async (req, res) => {
     var html = `Conrad's COMP 2537 Web Dev Assignment 1<br>`;
     if (req.session.authenticated) {
+        const email = req.session.email;
+        const result = await userCollection.find({ email: email}).project({ name: 1, _id: 0}).toArray();
+        let username = "";
+        if (result.length > 0) {
+            username = result[0].name;
+        }
+        console.log("test " + username);
         html += `
-        Hello, ${req.session.name}
+        Hello, ${username}
         <div><a href ="/members">Go to Members Area</a></div>
         <div><a href ="/logout">Logout</a></div>
         `;
@@ -231,11 +238,18 @@ app.post('/loggingin', async (req, res) => {
 });
 
 //members page
-app.get('/members', (req, res) => {
+app.get('/members', async (req, res) => {
     var html = `Conrad's COMP 2537 Web Dev Assignment 1<br>`;
     if (req.session.authenticated) {
+        const email = req.session.email;
+        const result = await userCollection.find({ email: email}).project({ name: 1, _id: 0}).toArray();
+        let username = "";
+        if (result.length > 0) {
+            username = result[0].name;
+        }
+        console.log("test " + username);
         html += `
-        Hello, ${req.session.name}
+        Hello, ${username}
         <div><a href ="/logout">Logout</a></div>
         `;
         res.send(html);
@@ -244,11 +258,32 @@ app.get('/members', (req, res) => {
     }
 });
 
+app.get('/members/:id', (req,res) => {
+
+    var gif = req.params.id;
+
+    if (gif == 1) {
+        res.send("<img src='/pika.gif' style='width:250px;'>");
+    }
+    else if (gif == 2) {
+        res.send("<img src='/socks.gif' style='width:250px;'>");
+    }
+    else if (gif == 3) {
+        res.send("<img src='/socks.gif' style='width:250px;'>");
+    }
+    else {
+        res.send("Invalid gif id: "+gif);
+    }
+});
+
+app.use(express.static(__dirname + "/public"));
+
 //logout page
 app.get('/logout', (req,res) => {
 	req.session.destroy();
     var html = `
     You are logged out.
+    <div><a href ="/">Homepage</a></div>
     `;
     res.send(html);
 });

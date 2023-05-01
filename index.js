@@ -63,6 +63,15 @@ app.get('/', async (req, res) => {
     var html = `Conrad's COMP 2537 Web Dev Assignment 1<br>`;
     if (req.session.authenticated) {
         const email = req.session.email;
+
+        const schema = Joi.string().max(20).required();
+        const validationResult = schema.validate(email);
+        if (validationResult.error != null) {
+           console.log(validationResult.error);
+           res.redirect("/");
+           return;
+        }
+
         const result = await userCollection.find({ email: email}).project({ name: 1, _id: 0}).toArray();
         let username = "";
         if (result.length > 0) {
@@ -82,6 +91,31 @@ app.get('/', async (req, res) => {
         `;
         res.send(html);
     }
+});
+
+app.get('/nosql-injection', async (req,res) => {
+	var name = req.query.user;
+
+	if (!name) {
+		res.send(`<h3>no user provided - try /nosql-injection?user=name</h3> <h3>or /nosql-injection?user[$ne]=name</h3>`);
+		return;
+	}
+	console.log("user: "+name);
+
+	const schema = Joi.string().max(20).required();
+	const validationResult = schema.validate(name);
+
+	if (validationResult.error != null) {  
+	   console.log(validationResult.error);
+	   res.send("<h1 style='color:darkred;'>A NoSQL injection attack was detected!!</h1>");
+	   return;
+	}	
+
+	const result = await userCollection.find({name: name}).project({name: 1, password: 1, _id: 1}).toArray();
+
+	console.log(result);
+
+    res.send(`<h1>Hello ${name}</h1>`);
 });
 
 //signup page
@@ -124,7 +158,7 @@ app.post('/createUser', async (req, res) => {
     const schema = Joi.object(
         {
             name: Joi.string().alphanum().max(20).required(),
-            email: Joi.string(),
+            email: Joi.string().max(20).required(),
             password: Joi.string().max(20).required()
         });
 
@@ -239,9 +273,19 @@ app.post('/loggingin', async (req, res) => {
 
 //members page
 app.get('/members', async (req, res) => {
+    const gif = Math.floor((Math.random() * 3) + 1);
     var html = `Conrad's COMP 2537 Web Dev Assignment 1<br>`;
     if (req.session.authenticated) {
         const email = req.session.email;
+
+        const schema = Joi.string().max(20).required();
+        const validationResult = schema.validate(email);
+        if (validationResult.error != null) {
+           console.log(validationResult.error);
+           res.redirect("/");
+           return;
+        }
+
         const result = await userCollection.find({ email: email}).project({ name: 1, _id: 0}).toArray();
         let username = "";
         if (result.length > 0) {
@@ -250,6 +294,7 @@ app.get('/members', async (req, res) => {
         console.log("test " + username);
         html += `
         Hello, ${username}
+        <img src= "/gif/2"/>
         <div><a href ="/logout">Logout</a></div>
         `;
         res.send(html);
@@ -258,7 +303,7 @@ app.get('/members', async (req, res) => {
     }
 });
 
-app.get('/members/:id', (req,res) => {
+app.get('/gif/:id', (req,res) => {
 
     var gif = req.params.id;
 
@@ -266,10 +311,10 @@ app.get('/members/:id', (req,res) => {
         res.send("<img src='/pika.gif' style='width:250px;'>");
     }
     else if (gif == 2) {
-        res.send("<img src='/socks.gif' style='width:250px;'>");
+        res.send("<img src='/rainbowcat.gif' style='width:250px;'>");
     }
     else if (gif == 3) {
-        res.send("<img src='/socks.gif' style='width:250px;'>");
+        res.send("<img src='/surprise.gif' style='width:250px;'>");
     }
     else {
         res.send("Invalid gif id: "+gif);

@@ -229,14 +229,15 @@ app.get('/members', (req, res) => {
         `;
         res.send(html);
     } else {
-        res.send("/");
+        res.redirect("/");
     }
 });
 
 //logout page
-app.get('/logout', (req, res) => {
+app.get('/logout', (req,res) => {
+	req.session.destroy();
     var html = `
-    <div>Placeholder for logout</div>
+    You are logged out.
     `;
     res.send(html);
 });

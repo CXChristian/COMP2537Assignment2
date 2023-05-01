@@ -11,8 +11,8 @@ const app = express();
 //used to connect to mongodb
 const bcrypt = require('bcrypt');
 const { MongoClient } = require('mongodb');
-app.use(express.urlencoded({extended: false}));
-var {database} = include('databaseConnection');
+app.use(express.urlencoded({ extended: false }));
+var { database } = include('databaseConnection');
 const userCollection = database.db('sessions').collection('users');
 
 const Joi = require("joi");
@@ -45,14 +45,16 @@ app.use(session({
 }))
 
 //main page
-app.get('/', (req,res) => {
+app.get('/', (req, res) => {
     var html = `Conrad's COMP 2537 Web Dev Assignment 1`;
     if (req.session.authenticated) {
         html += `
         Hello, ${req.session.name}
+        <div><a href ="/members">Go to Members Area</a></div>
+        <div><a href ="/logout">Logout</a></div>
         `;
         res.send(html);
-    } else{
+    } else {
         html += `
         <div><a href ="/signup">Sign Up</a></div>
         <div><a href ="/login">Log In</a></div>
@@ -62,7 +64,7 @@ app.get('/', (req,res) => {
 });
 
 //signup page
-app.get('/signup', (req,res) => {
+app.get('/signup', (req, res) => {
     var html = `
     <div>create user</div>
     <form action='/createUser' method='post'>
@@ -76,38 +78,89 @@ app.get('/signup', (req,res) => {
 });
 
 //create user page
-app.post('/createUser', async (req,res) => {
+app.post('/createUser', async (req, res) => {
     var name = req.body.name;
     var email = req.body.email;
     var password = req.body.password;
 
+    if (!req.body.name || req.body.name.trim() === '') {
+        res.redirect("/createUserInvalidName");
+        return;
+    }
+
+    if (!req.body.email || req.body.email.trim() === '') {
+        res.redirect("/createUserInvalidEmail");
+        return;
+    }
+
+    if (!req.body.password || req.body.password.trim() === '') {
+        res.redirect("/createUserInvalidPassword");
+        return;
+    }
+
     console.log(name);
 
     const schema = Joi.object(
-    {
-        name: Joi.string().alphanum().max(20).required(),
-        email: Joi.string(),
-        password: Joi.string().max(20).required()
-    });
+        {
+            name: Joi.string().alphanum().max(20).required(),
+            email: Joi.string(),
+            password: Joi.string().max(20).required()
+        });
 
-    const validationResult = schema.validate({name, email, password});
-	if (validationResult.error != null) {
-	   console.log(validationResult.error);
-	   res.redirect("/createUserInvalid");
-	   return;
+    const validationResultName = schema.validate({ name, password, email });
+    if (validationResultName.error != null) {
+        console.log(validationResultName.error);
+        res.redirect("/createUserInvalid");
+        return;
     }
 
     var hashedPassword = await bcrypt.hash(password, 12);
-	
-	await userCollection.insertOne({name: name, password: hashedPassword, email: email});
-	console.log("Inserted user into mongodb");
+
+    await userCollection.insertOne({ name: name, password: hashedPassword, email: email });
+    console.log("Inserted user into mongodb");
 
     var html = "successfully created user";
     res.send(html);
 });
 
+app.get('/createUserInvalid', (req, res) => {
+    var html = `
+        signin requirements not met
+
+        <div><a href ="/signup">Try again</a></div>
+    `;
+    res.send(html);
+})
+
+app.get('/createUserInvalidName', (req, res) => {
+    var html = `
+        Please provide a name.
+
+        <div><a href ="/signup">Try again</a></div>
+    `;
+    res.send(html);
+})
+
+app.get('/createUserInvalidEmail', (req, res) => {
+    var html = `
+        Please provide an email address.
+
+        <div><a href ="/signup">Try again</a></div>
+    `;
+    res.send(html);
+})
+
+app.get('/createUserInvalidPassword', (req, res) => {
+    var html = `
+        Please provide a password.
+
+        <div><a href ="/signup">Try again</a></div>
+    `;
+    res.send(html);
+})
+
 //login page
-app.get('/login', (req,res) => {
+app.get('/login', (req, res) => {
     var html = `
     log in
     <form action='/loggingin' method='post'>
@@ -120,7 +173,7 @@ app.get('/login', (req,res) => {
 });
 
 //members page
-app.get('/members', (req,res) => {
+app.get('/members', (req, res) => {
     var html = `
     <div>Placeholder for members</div>
     `;
@@ -128,7 +181,7 @@ app.get('/members', (req,res) => {
 });
 
 //logout page
-app.get('/logout', (req,res) => {
+app.get('/logout', (req, res) => {
     var html = `
     <div>Placeholder for logout</div>
     `;
@@ -136,9 +189,9 @@ app.get('/logout', (req,res) => {
 });
 
 //redirects/catches 404 pages
-app.get("*", (req,res) => {
-	res.status(404);
-	res.send("Sorry! We could not find that page. Error 404");
+app.get("*", (req, res) => {
+    res.status(404);
+    res.send("Sorry! We could not find that page. Error 404");
 })
 
 //console log the port being used

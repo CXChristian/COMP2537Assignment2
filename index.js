@@ -268,9 +268,23 @@ app.post('/loggingin', async (req, res) => {
     }
     else {
         console.log("Invalid email/password combination");
-        res.redirect("/login");
+        res.redirect("/loginInvalid");
         return;
     }
+});
+
+//invalid login page
+app.get('/loginInvalid', (req, res) => {
+    var html = `
+    log in
+    <form action='/loggingin' method='post'>
+    <input name='email' type='text' placeholder='email'>
+    <input name='password' type='password' placeholder='password'>
+    <button>Submit</button>
+    </form>
+    <div>Invalid email/password combination.</div>
+    `;
+    res.send(html);
 });
 
 //members page

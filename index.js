@@ -8,6 +8,8 @@ const express = require('express');
 const session = require('express-session');
 const app = express();
 
+app.set('view engine', 'ejs');
+
 const MongoStore = require('connect-mongo');
 
 //used to connect to mongodb
@@ -60,10 +62,8 @@ app.use(session({
 
 //main page
 app.get('/', async (req, res) => {
-    var html = `Conrad's COMP 2537 Web Dev Assignment 1<br>`;
     if (req.session.authenticated) {
         const email = req.session.email;
-
         const schema = Joi.string().max(20).required();
         const validationResult = schema.validate(email);
         if (validationResult.error != null) {
@@ -76,20 +76,14 @@ app.get('/', async (req, res) => {
         let username = "";
         if (result.length > 0) {
             username = result[0].name;
+        } else {
+            username = "Fellow User";
         }
-        console.log("test " + username);
-        html += `
-        Hello, ${username}
-        <div><a href ="/members">Go to Members Area</a></div>
-        <div><a href ="/logout">Logout</a></div>
-        `;
-        res.send(html);
+        console.log("test" + username);
+        
+        res.render('indexUser', { username });
     } else {
-        html += `
-        <div><a href ="/signup">Sign Up</a></div>
-        <div><a href ="/login">Log In</a></div>
-        `;
-        res.send(html);
+        res.render("index.ejs")
     }
 });
 
@@ -122,16 +116,7 @@ app.get('/nosql-injection', async (req,res) => {
 
 //signup page
 app.get('/signup', (req, res) => {
-    var html = `
-    <div>create user</div>
-    <form action='/createUser' method='post'>
-    <input name='name' type='text' placeholder='name'>
-    <input name='email' type='text' placeholder='email'>
-    <input name='password' type='password' placeholder='password'>
-    <button>Submit</button>
-    </form>
-    `;
-    res.send(html);
+    res.render('signup');
 });
 
 //create user page
@@ -141,17 +126,17 @@ app.post('/createUser', async (req, res) => {
     var password = req.body.password;
 
     if (!req.body.name || req.body.name.trim() === '') {
-        res.redirect("/createUserInvalidName");
+        res.render('createUserInvalidName');
         return;
     }
 
     if (!req.body.email || req.body.email.trim() === '') {
-        res.redirect("/createUserInvalidEmail");
+        res.render('createUserInvalidEmail');
         return;
     }
 
     if (!req.body.password || req.body.password.trim() === '') {
-        res.redirect("/createUserInvalidPassword");
+        res.render('createUserInvalidPassword');
         return;
     }
 
@@ -167,7 +152,7 @@ app.post('/createUser', async (req, res) => {
     const validationResultName = schema.validate({ name, password, email });
     if (validationResultName.error != null) {
         console.log(validationResultName.error);
-        res.redirect("/createUserInvalid");
+        res.render('createUserInvalid');
         return;
     }
 
@@ -176,65 +161,16 @@ app.post('/createUser', async (req, res) => {
     await userCollection.insertOne({ name: name, password: hashedPassword, email: email });
     console.log("Inserted user into mongodb");
 
-    var html = `successfully created user
-    
-    <div><a href ="/">Homepage</a></div>
-    `;
-
     req.session.authenticated = true;
     req.session.email = email;
     req.session.cookie.maxAge = expireTime;
 
-    res.send(html);
+    res.render('createUser');
 });
-
-app.get('/createUserInvalid', (req, res) => {
-    var html = `
-        signin requirements not met
-
-        <div><a href ="/signup">Try again</a></div>
-    `;
-    res.send(html);
-})
-
-app.get('/createUserInvalidName', (req, res) => {
-    var html = `
-        Please provide a name.
-
-        <div><a href ="/signup">Try again</a></div>
-    `;
-    res.send(html);
-})
-
-app.get('/createUserInvalidEmail', (req, res) => {
-    var html = `
-        Please provide an email address.
-
-        <div><a href ="/signup">Try again</a></div>
-    `;
-    res.send(html);
-})
-
-app.get('/createUserInvalidPassword', (req, res) => {
-    var html = `
-        Please provide a password.
-
-        <div><a href ="/signup">Try again</a></div>
-    `;
-    res.send(html);
-})
 
 //login page
 app.get('/login', (req, res) => {
-    var html = `
-    log in
-    <form action='/loggingin' method='post'>
-    <input name='email' type='text' placeholder='email'>
-    <input name='password' type='password' placeholder='password'>
-    <button>Submit</button>
-    </form>
-    `;
-    res.send(html);
+    res.render('login');
 });
 
 app.post('/loggingin', async (req, res) => {
@@ -245,7 +181,7 @@ app.post('/loggingin', async (req, res) => {
     const validationResult = schema.validate(email);
     if (validationResult.error != null) {
         console.log(validationResult.error);
-        res.redirect("/login");
+        res.render('loginInvalid');
         return;
     }
 
@@ -253,12 +189,11 @@ app.post('/loggingin', async (req, res) => {
 
     console.log(result);
     if (result.length != 1) {
-        console.log("email not found");
-        res.redirect("/login");
+        console.log("Email not found");
+        res.render('loginInvalid');
         return;
     }
     if (await bcrypt.compare(password, result[0].password)) {
-        console.log("correct password");
         req.session.authenticated = true;
         req.session.email = email;
         req.session.cookie.maxAge = expireTime;
@@ -267,30 +202,14 @@ app.post('/loggingin', async (req, res) => {
         return;
     }
     else {
-        console.log("Invalid email/password combination");
-        res.redirect("/loginInvalid");
+        res.render('loginInvalid');
         return;
     }
-});
-
-//invalid login page
-app.get('/loginInvalid', (req, res) => {
-    var html = `
-    log in
-    <form action='/loggingin' method='post'>
-    <input name='email' type='text' placeholder='email'>
-    <input name='password' type='password' placeholder='password'>
-    <button>Submit</button>
-    </form>
-    <div>Invalid email/password combination.</div>
-    `;
-    res.send(html);
 });
 
 //members page
 app.get('/members', async (req, res) => {
     const gif = Math.floor((Math.random() * 3) + 1);
-    var html = `Conrad's COMP 2537 Web Dev Assignment 1<br>`;
     if (req.session.authenticated) {
         const email = req.session.email;
 
@@ -307,38 +226,13 @@ app.get('/members', async (req, res) => {
         if (result.length > 0) {
             username = result[0].name;
         }
-        console.log("test " + username);
-        html += `
-        Hello, ${username}
-        <br>
-        <img src='${gifUpload(gif)}' alt="Sorry, An image couldn't be loaded!" style='width:250px';>
-        <div><a href ="/logout">Logout</a></div>
-        `;
-        res.send(html);
+        res.render('members', { username });
     } else {
         res.redirect("/");
     }
 });
 
-//Tried using this for hours, couldn't figure out how to query into members
-//but direct from localhost[port]/gif/2 worked...
-app.get('/gif/:id', (req, res) => {
-    var gif = req.params.id;
-
-
-    if (gif == 1) {
-        res.send("/pika.gif");
-    }
-    else if (gif == 2) {
-        res.send("<img src='/rainbowcat.gif' style='width:250px;'>");
-    }
-    else if (gif == 3) {
-        res.send("<img src='/surprise.gif' style='width:250px;'>");
-    }
-    else {
-        res.send("Invalid gif id: "+gif);
-    }
-});
+app.use(express.static(__dirname + "/public"));
 
 //instead used function to return gif address
 function gifUpload(gif, res) {
@@ -353,22 +247,16 @@ function gifUpload(gif, res) {
     }
 };
 
-app.use(express.static(__dirname + "/public"));
-
 //logout page
 app.get('/logout', (req,res) => {
 	req.session.destroy();
-    var html = `
-    You are logged out.
-    <div><a href ="/">Homepage</a></div>
-    `;
-    res.send(html);
+    res.render('logout');
 });
 
 //redirects/catches 404 pages
 app.get("*", (req, res) => {
     res.status(404);
-    res.send("Sorry! We could not find that page. Error 404");
+    res.render('404');
 })
 
 //console log the port being used

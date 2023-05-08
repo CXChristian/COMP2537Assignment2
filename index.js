@@ -67,20 +67,21 @@ app.get('/', async (req, res) => {
         const schema = Joi.string().max(20).required();
         const validationResult = schema.validate(email);
         if (validationResult.error != null) {
-           console.log(validationResult.error);
-           res.redirect("/");
-           return;
+            console.log(validationResult.error);
+            res.redirect("/");
+            return;
         }
 
-        const result = await userCollection.find({ email: email}).project({ name: 1, _id: 0}).toArray();
+        const result = await userCollection.find({ email: email }).project({ name: 1, _id: 0 }).toArray();
         let username = "";
         if (result.length > 0) {
             username = result[0].name;
         } else {
             username = "Fellow User";
         }
+
         console.log("test" + username);
-        
+
         res.render('indexUser', { username });
     } else {
         res.render("index.ejs")
@@ -88,28 +89,28 @@ app.get('/', async (req, res) => {
 });
 
 //prevents code injection 
-app.get('/nosql-injection', async (req,res) => {
-	var name = req.query.user;
+app.get('/nosql-injection', async (req, res) => {
+    var name = req.query.user;
 
-	if (!name) {
-		res.send(`<h3>no user provided - try /nosql-injection?user=name</h3> <h3>or /nosql-injection?user[$ne]=name</h3>`);
-		return;
-	}
-	console.log("user: "+name);
+    if (!name) {
+        res.send(`<h3>no user provided - try /nosql-injection?user=name</h3> <h3>or /nosql-injection?user[$ne]=name</h3>`);
+        return;
+    }
+    console.log("user: " + name);
 
-	const schema = Joi.string().max(20).required();
-	const validationResult = schema.validate(name);
+    const schema = Joi.string().max(20).required();
+    const validationResult = schema.validate(name);
 
-	if (validationResult.error != null) {  
-	   console.log(validationResult.error);
-       //redirects back to mainpage if validation finds something fishy
-	   res.redirect("/");
-	   return;
-	}	
+    if (validationResult.error != null) {
+        console.log(validationResult.error);
+        //redirects back to mainpage if validation finds something fishy
+        res.redirect("/");
+        return;
+    }
 
-	const result = await userCollection.find({name: name}).project({name: 1, password: 1, _id: 1}).toArray();
+    const result = await userCollection.find({ name: name }).project({ name: 1, password: 1, _id: 1 }).toArray();
 
-	console.log(result);
+    console.log(result);
 
     res.send(`<h1>Hello ${name}</h1>`);
 });
@@ -158,7 +159,7 @@ app.post('/createUser', async (req, res) => {
 
     var hashedPassword = await bcrypt.hash(password, 12);
 
-    await userCollection.insertOne({ name: name, password: hashedPassword, email: email });
+    await userCollection.insertOne({ name: name, password: hashedPassword, email: email, admin: "user" });
     console.log("Inserted user into mongodb");
 
     req.session.authenticated = true;
@@ -216,12 +217,12 @@ app.get('/members', async (req, res) => {
         const schema = Joi.string().max(20).required();
         const validationResult = schema.validate(email);
         if (validationResult.error != null) {
-           console.log(validationResult.error);
-           res.redirect("/");
-           return;
+            console.log(validationResult.error);
+            res.redirect("/");
+            return;
         }
 
-        const result = await userCollection.find({ email: email}).project({ name: 1, _id: 0}).toArray();
+        const result = await userCollection.find({ email: email }).project({ name: 1, _id: 0 }).toArray();
         let username = "";
         if (result.length > 0) {
             username = result[0].name;
@@ -234,28 +235,50 @@ app.get('/members', async (req, res) => {
 
 app.use(express.static(__dirname + "/public"));
 
-//instead used function to return gif address
-function gifUpload(gif, res) {
-    if (gif == 1) {
-        return "/pika.gif";
+app.get('/admin', async (req, res) => {
+    if (!req.session.authenticated) {
+        res.redirect('login');
+        return;
     }
-    else if (gif == 2) {
-        return "/rainbowcat.gif";
-    }
-    else if (gif == 3) {
-        return "/surprise.gif";
-    }
-};
 
-app.get('/admin', async (req,res) => {
-    const result = await userCollection.find().project({name: 1, email: 1, _id: 1}).toArray();
+    if (await isAdmin(req)) {
+        const result = await userCollection.find().project({ name: 1, email: 1, admin: 1, _id: 1 }).toArray();
+        res.render('admin', { users: result });
 
-    res.render('admin', {users: result});
+    } else {
+        res.status(403);
+        res.render("errorMessage", { error: "Not Authorized" });
+        return;
+    };
+});
+
+async function isAdmin(req) {
+    const email = req.session.email;
+    const result = await userCollection.find({ email: email }).project({ admin: 1, _id: 1 }).toArray();
+
+    let userType = "";
+    userType = result[0].admin;
+    if (userType == "admin") {
+        return true;
+    }
+    return false;
+}
+
+app.post("/promote", async (req, res) => {
+    const email = req.body.email;
+    await userCollection.updateOne({ email: email }, { $set: { admin: "admin" } });
+    res.redirect("/admin");
+});
+
+app.post("/demote", async (req, res) => {
+    const email = req.body.email;
+    await userCollection.updateOne({ email: email }, { $set: { admin: "user" } });
+    res.redirect("/admin");
 });
 
 //logout page
-app.get('/logout', (req,res) => {
-	req.session.destroy();
+app.get('/logout', (req, res) => {
+    req.session.destroy();
     res.render('logout');
 });
 

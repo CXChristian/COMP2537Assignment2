@@ -1,9 +1,10 @@
-<%- include("templates/header") %> 
+<%- include("templates/header") %>
     <div>Hello, <%=username%>!</div>
-        <br>
-        <img src='/pika.gif' alt="Sorry, An image couldn't be loaded!" style='width:250px';>
-        <img src='/rainbowcat.gif' alt="Sorry, An image couldn't be loaded!" style='width:250px';>
-        <img src='/surprise.gif' alt="Sorry, An image couldn't be loaded!" style='width:250px';>
-        <a type="button" href="/logout" class="btn btn-primary">Logout</a>
-    </form>
-<%- include("templates/footer") %>
+    <br>
+    <div class="row mb-3 text-center">
+        <div class="col-md-4 themed-grid-col"><img class="img-fluid" src='/pika.gif' alt="Sorry, An image couldn't be loaded!"></div>
+        <div class="col-md-4 themed-grid-col"><img class="img-fluid" src='/rainbowcat.gif' alt="Sorry, An image couldn't be loaded!"></div>
+        <div class="col-md-4 themed-grid-col"><img class="img-fluid" src='/surprise.gif' alt="Sorry, An image couldn't be loaded!"></div>
+    </div>
+    <a type="button" href="/logout" class="btn btn-primary">Logout</a>
+    <%- include("templates/footer") %>

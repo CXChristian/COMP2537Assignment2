@@ -1,10 +1,21 @@
 <%- include("templates/header") %> 
-    <div>Log in</div>
-        <form action='/loggingin' method='post'>
-        <input name='email' type='text' placeholder='email'>
-        <input name='password' type='password' placeholder='password'>
-        <button>Submit</button>
-        </form>
-        <div>Invalid email/password combination.</div>
+<main class="form-signin w-100 m-auto">
+    <div class="d-flex gap-2 justify-content-center py-5">
+    <form action='/loggingin' method='post' class="text-center">
+        <img class="mb-4" src="https://getbootstrap.com/docs/5.3/assets/brand/bootstrap-logo.svg" alt="" width="72" height="57">
+        <h1 class="h3 mb-3 fw-normal">Please sign in</h1>
+
+        <div class="form-floating">
+            <input name='email' type='text' class="form-control" id="floatingInput" placeholder="Email Address">
+            <label for="floatingInput">Email Address</label>
+        </div>
+        <div class="form-floating">
+            <input name='password' type='password' class="form-control" id="floatingPassword" placeholder="Password">
+            <label for="floatingPassword">Password</label>
+        </div>
+        <button type="submit" class="w-100 btn btn-lg btn-primary">Submit</button>
     </form>
+</div>
+</main>
+<div style="text-align: center;">Invalid email/password combination.</div>
 <%- include("templates/footer") %>

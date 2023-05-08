@@ -247,6 +247,12 @@ function gifUpload(gif, res) {
     }
 };
 
+app.get('/admin', async (req,res) => {
+    const result = await userCollection.find().project({username: 1, _id: 1}).toArray();
+
+    res.render('admin', {users: result});
+});
+
 //logout page
 app.get('/logout', (req,res) => {
 	req.session.destroy();
@@ -257,7 +263,7 @@ app.get('/logout', (req,res) => {
 app.get("*", (req, res) => {
     res.status(404);
     res.render('404');
-})
+});
 
 //console log the port being used
 app.listen(port, () => {

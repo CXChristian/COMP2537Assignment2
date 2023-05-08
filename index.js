@@ -159,7 +159,7 @@ app.post('/createUser', async (req, res) => {
 
     var hashedPassword = await bcrypt.hash(password, 12);
 
-    await userCollection.insertOne({ name: name, password: hashedPassword, email: email, admin: "user" });
+    await userCollection.insertOne({ name: name, password: hashedPassword, email: email, user_type: "user" });
     console.log("Inserted user into mongodb");
 
     req.session.authenticated = true;
@@ -242,7 +242,7 @@ app.get('/admin', async (req, res) => {
     }
 
     if (await isAdmin(req)) {
-        const result = await userCollection.find().project({ name: 1, email: 1, admin: 1, _id: 1 }).toArray();
+        const result = await userCollection.find().project({ name: 1, email: 1, user_type: 1, _id: 1 }).toArray();
         res.render('admin', { users: result });
 
     } else {
@@ -254,10 +254,10 @@ app.get('/admin', async (req, res) => {
 
 async function isAdmin(req) {
     const email = req.session.email;
-    const result = await userCollection.find({ email: email }).project({ admin: 1, _id: 1 }).toArray();
+    const result = await userCollection.find({ email: email }).project({ user_type: 1, _id: 1 }).toArray();
 
     let userType = "";
-    userType = result[0].admin;
+    userType = result[0].user_type;
     if (userType == "admin") {
         return true;
     }
@@ -266,13 +266,13 @@ async function isAdmin(req) {
 
 app.post("/promote", async (req, res) => {
     const email = req.body.email;
-    await userCollection.updateOne({ email: email }, { $set: { admin: "admin" } });
+    await userCollection.updateOne({ email: email }, { $set: { user_type: "admin" } });
     res.redirect("/admin");
 });
 
 app.post("/demote", async (req, res) => {
     const email = req.body.email;
-    await userCollection.updateOne({ email: email }, { $set: { admin: "user" } });
+    await userCollection.updateOne({ email: email }, { $set: { user_type: "user" } });
     res.redirect("/admin");
 });
 

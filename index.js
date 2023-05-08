@@ -248,7 +248,7 @@ function gifUpload(gif, res) {
 };
 
 app.get('/admin', async (req,res) => {
-    const result = await userCollection.find().project({username: 1, _id: 1}).toArray();
+    const result = await userCollection.find().project({name: 1, email: 1, _id: 1}).toArray();
 
     res.render('admin', {users: result});
 });

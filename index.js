@@ -235,7 +235,6 @@ app.get('/members', async (req, res) => {
 
 app.use(express.static(__dirname + "/public"));
 
-// app.get('/admin', sessionValidation, adminAuthorization)
 app.get('/admin', async (req, res) => {
     if (!req.session.authenticated) {
         res.redirect('login');
@@ -254,11 +253,9 @@ app.get('/admin', async (req, res) => {
 });
 
 async function isAdmin(req) {
-    console.log(req.session.user_type);
-
     const email = req.session.email;
-    const user_type = req.session.user_type;
     const result = await userCollection.find({ email: email }).project({ user_type: 1, _id: 1 }).toArray();
+
     let userType = "";
     userType = result[0].user_type;
     if (userType == "admin") {
